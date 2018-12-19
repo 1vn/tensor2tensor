@@ -3711,7 +3711,7 @@ def targeted_dropout(inputs,
     Tensor, same shape and dtype as `inputs`.
   """
   if not is_training and do_prune:
-    k = tf.round(tf.to_float(k) * tf.to_float(1. - keep_prob))
+    k = tf.floor(tf.to_float(k) * tf.to_float(1. - keep_prob))
 
   mask = targeting_fn(inputs, k)
   mask = tf.cast(mask, inputs.dtype)

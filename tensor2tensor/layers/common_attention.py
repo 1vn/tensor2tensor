@@ -3192,7 +3192,11 @@ def compute_attention_component(antecedent,
                                 filter_width=1,
                                 padding="VALID",
                                 name="c",
-                                vars_3d_num_heads=0):
+                                vars_3d_num_heads=0,
+                                use_td=False,
+                                is_training=True,
+                                keep_prob=1.0,
+                                targeting_rate=0.0):
   """Computes attention compoenent (query, key or value).
 
   Args:
@@ -3219,12 +3223,36 @@ def compute_attention_component(antecedent,
                vars_3d_num_heads,
                total_depth // vars_3d_num_heads],
         initializer=tf.random_normal_initializer(stddev=initializer_stddev))
+    if use_td and keep_prob < 1.0:
+      targeting_fn = common_layers.weight_targeting
+
+      var = common_layers.targeted_dropout(
+          var,
+          targeting_rate * tf.to_float(input_depth * vars_3d_num_heads * depth_per_head),
+          keep_prob,
+          targeting_fn,
+          is_training,
+          do_prune=True)
+
     var = tf.cast(var, antecedent.dtype)
     var = tf.reshape(var, [input_depth, total_depth])
     return tf.tensordot(antecedent, var, axes=1)
   if filter_width == 1:
-    return common_layers.dense(
+    linear = common_layers.dense(
         antecedent, total_depth, use_bias=False, name=name)
+    
+    if use_td and keep_prob < 1.0:
+      targeting_fn = common_layers.weight_targeting
+
+      linear = common_layers.targeted_dropout(
+          linear,
+          targeting_rate * tf.to_float(total_depth),
+          keep_prob,
+          targeting_fn,
+          is_training,
+          do_prune=True)
+
+    return linear
   else:
     return common_layers.conv1d(
         antecedent, total_depth, filter_width, padding=padding, name=name)
@@ -3238,7 +3266,11 @@ def compute_qkv(query_antecedent,
                 kv_filter_width=1,
                 q_padding="VALID",
                 kv_padding="VALID",
-                vars_3d_num_heads=0):
+                vars_3d_num_heads=0,
+                use_td=None,
+                targeting_rate=0.0,
+                keep_prob=1.0,
+                is_training=True):
   """Computes query, key and value.
 
   Args:
@@ -3271,14 +3303,22 @@ def compute_qkv(query_antecedent,
       kv_filter_width,
       kv_padding,
       "k",
-      vars_3d_num_heads=vars_3d_num_heads)
+      vars_3d_num_heads=vars_3d_num_heads,
+      use_td=use_td,
+      targeting_rate=targeting_rate,
+      keep_prob=keep_prob,
+      is_training=is_training)
   v = compute_attention_component(
       memory_antecedent,
       total_value_depth,
       kv_filter_width,
       kv_padding,
       "v",
-      vars_3d_num_heads=vars_3d_num_heads)
+      vars_3d_num_heads=vars_3d_num_heads,
+      use_td=use_td,
+      targeting_rate=targeting_rate,
+      keep_prob=keep_prob,
+      is_training=is_training)
   return q, k, v
 
 
@@ -3401,26 +3441,10 @@ def multihead_attention(query_antecedent,
       q, k, v = compute_qkv(query_antecedent, memory_antecedent,
                             total_key_depth, total_value_depth, q_filter_width,
                             kv_filter_width, q_padding, kv_padding,
-                            vars_3d_num_heads=vars_3d_num_heads)
-      if use_td and keep_prob < 1.0:
-        targeting_fn = common_layers.weight_targeting
+                            vars_3d_num_heads=vars_3d_num_heads,use_td=use_td,
+                            keep_prob=keep_prob,targeting_rate=targeting_rate,
+                            is_training=is_training)
 
-        k = common_layers.targeted_dropout(
-            k,
-            targeting_rate * tf.to_float(kv_filter_width),
-            keep_prob,
-            targeting_fn,
-            is_training,
-            do_prune=True)
-        
-        v = common_layers.targeted_dropout(
-            v,
-            targeting_rate * tf.to_float(kv_filter_width),
-            keep_prob,
-            targeting_fn,
-            is_training,
-            do_prune=True)
-            
     if cache is not None:
       if attention_type not in ["dot_product", "dot_product_relative"]:
         # TODO(petershaw): Support caching when using relative position
@@ -3551,16 +3575,6 @@ def multihead_attention(query_antecedent,
 
     # Set last dim specifically.
     x.set_shape(x.shape.as_list()[:-1] + [total_value_depth])
-    if use_td and keep_prob < 1.0:
-      targeting_fn = common_layers.weight_targeting
-
-      x = common_layers.targeted_dropout(
-          x,
-          targeting_rate * tf.to_float(total_value_depth * q_filter_width),
-          keep_prob,
-          targeting_fn,
-          is_training,
-          do_prune=True)
 
     if vars_3d:
       o_var = tf.get_variable(
