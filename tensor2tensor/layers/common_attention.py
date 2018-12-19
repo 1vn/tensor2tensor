@@ -3238,20 +3238,19 @@ def compute_attention_component(antecedent,
     var = tf.reshape(var, [input_depth, total_depth])
     return tf.tensordot(antecedent, var, axes=1)
   if filter_width == 1:
-    linear = common_layers.dense(
-        antecedent, total_depth, use_bias=False, name=name)
-    
     if use_td and keep_prob < 1.0:
       targeting_fn = common_layers.weight_targeting
 
-      linear = common_layers.targeted_dropout(
-          linear,
+      antecedent = common_layers.targeted_dropout(
+          antecedent,
           targeting_rate * tf.to_float(total_depth),
           keep_prob,
           targeting_fn,
           is_training,
           do_prune=True)
 
+    linear = common_layers.dense(
+        antecedent, total_depth, use_bias=False, name=name)
     return linear
   else:
     return common_layers.conv1d(
