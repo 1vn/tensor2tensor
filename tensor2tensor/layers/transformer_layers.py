@@ -190,7 +190,11 @@ def transformer_encoder(encoder_input,
               pad_remover,
               conv_padding="SAME",
               nonpadding_mask=nonpadding,
-              losses=losses)
+              losses=losses,
+              use_td=hparams.use_td,
+              keep_prob=hparams.keep_prob,
+              is_training=hparams.mode == tf.estimator.ModeKeys.TRAIN,
+              targeting_rate=hparams.targeting_rate,)
           x = common_layers.layer_postprocess(x, y, hparams)
     # if normalization is done in layer_preprocess, then it should also be done
     # on the output, since the output can grow very large, being the sum of
@@ -283,7 +287,29 @@ def transformer_ffn_layer(x,
           pad_remover.restore(tf.squeeze(conv_output, axis=0)), original_shape)
     return conv_output
   elif ffn_layer == "td_dense_relu_dense":
-    return common_layers.td_dense_relu_dense(
+    # In simple convolution mode, use `pad_remover` to speed up processing.
+    mlperf_log.transformer_print(
+        key=mlperf_log.MODEL_HP_FFN_FILTER_DENSE,
+        value={
+            "filter_size": hparams.filter_size,
+            "use_bias": "True",
+            "activation": mlperf_log.RELU
+        })
+    mlperf_log.transformer_print(
+        key=mlperf_log.MODEL_HP_FFN_OUTPUT_DENSE,
+        value={
+            "hidden_size": hparams.hidden_size,
+            "use_bias": "True",
+        })
+    mlperf_log.transformer_print(
+        key=mlperf_log.MODEL_HP_RELU_DROPOUT, value=hparams.relu_dropout)
+    if pad_remover:
+      original_shape = common_layers.shape_list(x)
+      # Collapse `x` across examples, and remove padding positions.
+      x = tf.reshape(x, tf.concat([[-1], original_shape[2:]], axis=0))
+      x = tf.expand_dims(pad_remover.remove(x), axis=0)
+
+    conv_output = common_layers.td_dense_relu_dense(
         x,
         hparams.filter_size,
         hparams.hidden_size,
@@ -292,6 +318,12 @@ def transformer_ffn_layer(x,
         keep_prob=keep_prob,
         is_training=is_training,
         hparams=hparams)
+
+    if pad_remover:
+      # Restore `conv_output` to the original shape of `x`, including padding.
+      conv_output = tf.reshape(
+          pad_remover.restore(tf.squeeze(conv_output, axis=0)), original_shape)
+    return conv_output
   elif ffn_layer == "conv_relu_conv":
     return common_layers.conv_relu_conv(
         x,

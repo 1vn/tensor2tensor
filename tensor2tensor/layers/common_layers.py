@@ -1241,6 +1241,7 @@ def dense_relu_dense(inputs,
       activation=output_activation,
       use_bias=True,
       name=layer_name.format("conv2"))
+  print(o, "yolo")
   return o
 
 
@@ -3691,7 +3692,7 @@ def td_dense(x,
             use_bias=True,
             hparams=None,
             activation=None):
-  with tf.variable_scope(name, default_name="td_conv"):
+  with tf.variable_scope(name, default_name="td_dense"):
     x_shape = shape_list(x)
     x = tf.reshape(x, [-1, x_shape[2]])
     w = tf.get_variable("kernel",
@@ -3711,21 +3712,21 @@ def td_dense(x,
           keep_prob,
           targeting_fn,
           is_training,
-          do_prune=True)
+          do_prune=do_prune)
 
     w = tf.identity(w, name="post_dropout")
     y = tf.matmul(x, w) + b
 
     if use_bias:
       y += b
-    
+
     if activation:
       y = activation(y)
 
-    if len(x_shape) == 3:
-      return tf.reshape(y, [x_shape[0], x_shape[1], x_shape[2]])
-    
-    return tf.reshape(y, [x_shape[0], x_shape[1], x_shape[2], x_shape[3]])
+    o = tf.reshape(y, x_shape)
+    print(o, "yolo")
+    return o
+
 
 def td_dense_relu_dense(inputs,
                      filter_size,
@@ -3735,10 +3736,10 @@ def td_dense_relu_dense(inputs,
                      dropout_broadcast_dims=None,
                      name=None,
                      use_td=False,
-                      is_training=True,
-                      keep_prob=1.0,
-                      targeting_rate=0.0,
-                      hparams=None):
+                     is_training=True,
+                     keep_prob=1.0,
+                     targeting_rate=0.0,
+                     hparams=None):
   """Hidden layer with RELU activation followed by linear projection."""
   layer_name = "%s_{}" % name if name else "{}"
   h = td_dense(inputs,
