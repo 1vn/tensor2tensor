@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Commonly re-used transformer layers."""
 
 from __future__ import absolute_import
@@ -155,7 +154,8 @@ def transformer_encoder(encoder_input,
     pad_remover = None
     if hparams.use_pad_remover and not common_layers.is_xla_compiled():
       pad_remover = expert_utils.PadRemover(padding)
-    for layer in range(hparams.num_encoder_layers or hparams.num_hidden_layers):
+    for layer in range(hparams.num_encoder_layers or
+                       hparams.num_hidden_layers):
       with tf.variable_scope("layer_%d" % layer):
         with tf.variable_scope("self_attention"):
           y = common_attention.multihead_attention(
@@ -180,7 +180,8 @@ def transformer_encoder(encoder_input,
               use_td=hparams.use_td,
               keep_prob=hparams.keep_prob,
               targeting_rate=hparams.targeting_rate,
-              is_training=hparams.mode == tf.estimator.ModeKeys.TRAIN)
+              is_training=hparams.mode == tf.estimator.ModeKeys.TRAIN,
+              hparams=hparams)
           x = common_layers.layer_postprocess(x, y, hparams)
         with tf.variable_scope("ffn"):
           y = transformer_ffn_layer(
@@ -190,7 +191,7 @@ def transformer_encoder(encoder_input,
               conv_padding="SAME",
               nonpadding_mask=nonpadding,
               losses=losses)
-          x = common_layers.layer_postprocess(x, y, hparams)          
+          x = common_layers.layer_postprocess(x, y, hparams)
     # if normalization is done in layer_preprocess, then it should also be done
     # on the output, since the output can grow very large, being the sum of
     # a whole stack of unnormalized layer outputs.
@@ -208,7 +209,11 @@ def transformer_ffn_layer(x,
                           losses=None,
                           cache=None,
                           decode_loop_step=None,
-                          readout_filter_size=0):
+                          readout_filter_size=0,
+                          use_td=False,
+                          is_training=True,
+                          keep_prob=1.0,
+                          targeting_rate=0.0):
   """Feed-forward layer in the transformer.
 
   Args:
@@ -277,6 +282,16 @@ def transformer_ffn_layer(x,
       conv_output = tf.reshape(
           pad_remover.restore(tf.squeeze(conv_output, axis=0)), original_shape)
     return conv_output
+  elif ffn_layer == "td_dense_relu_dense":
+    return common_layers.td_dense_relu_dense(
+        x,
+        hparams.filter_size,
+        hparams.hidden_size,
+        dropout_broadcast_dims=relu_dropout_broadcast_dims,
+        targeting_rate=targeting_rate,
+        keep_prob=keep_prob,
+        is_training=is_training,
+        hparams=hparams)
   elif ffn_layer == "conv_relu_conv":
     return common_layers.conv_relu_conv(
         x,
@@ -294,8 +309,7 @@ def transformer_ffn_layer(x,
         x, hparams.parameter_attention_key_channels or hparams.hidden_size,
         hparams.parameter_attention_value_channels or hparams.hidden_size,
         hparams.hidden_size, readout_filter_size or hparams.filter_size,
-        hparams.num_heads,
-        hparams.attention_dropout)
+        hparams.num_heads, hparams.attention_dropout)
   elif ffn_layer == "conv_hidden_relu_with_sepconv":
     return common_layers.conv_hidden_relu(
         x,
@@ -308,10 +322,9 @@ def transformer_ffn_layer(x,
   elif ffn_layer == "sru":
     return common_layers.sru(x)
   elif ffn_layer == "local_moe_tpu":
-    overhead = (
-        hparams.moe_overhead_train
-        if hparams.mode == tf.estimator.ModeKeys.TRAIN else
-        hparams.moe_overhead_eval)
+    overhead = (hparams.moe_overhead_train
+                if hparams.mode == tf.estimator.ModeKeys.TRAIN else
+                hparams.moe_overhead_eval)
     ret, loss = expert_utils.local_moe_tpu(
         x,
         hparams.filter_size // 2,
@@ -320,10 +333,9 @@ def transformer_ffn_layer(x,
         overhead=overhead,
         loss_coef=hparams.moe_loss_coef)
   elif ffn_layer == "local_moe":
-    overhead = (
-        hparams.moe_overhead_train
-        if hparams.mode == tf.estimator.ModeKeys.TRAIN else
-        hparams.moe_overhead_eval)
+    overhead = (hparams.moe_overhead_train
+                if hparams.mode == tf.estimator.ModeKeys.TRAIN else
+                hparams.moe_overhead_eval)
     ret, loss = expert_utils.local_moe(
         x,
         True,

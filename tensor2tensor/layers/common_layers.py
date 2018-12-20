@@ -2936,6 +2936,7 @@ def dense(x, units, **kwargs):
   return tf.layers.dense(x, units, **kwargs)
 
 
+
 def batch_dense(inputs,
                 units,
                 activation=None,
@@ -3679,6 +3680,89 @@ def td_conv(inputs,
 
     return y
 
+def td_dense(x,
+            units,
+            targeting_fn,
+            keep_prob,
+            targeting_rate,
+            is_training,
+            name,
+            do_prune=False,
+            use_bias=True,
+            hparams=None,
+            activation=None):
+  with tf.variable_scope(name, default_name="td_conv"):
+    x_shape = shape_list(x)
+    x = tf.reshape(x, [-1, x_shape[2]])
+    w = tf.get_variable("kernel",
+                        shape=[x.shape[1], units],
+                        dtype=tf.float32,
+                        initializer=tf.glorot_normal_initializer())
+    b = tf.get_variable(
+        "bias",
+        shape=[units],
+        dtype=tf.float32,
+        initializer=tf.zeros_initializer())
+
+    if keep_prob < 1.0:
+      w = targeted_dropout(
+          w,
+          targeting_rate * tf.to_float(x.shape[1]) - 1,
+          keep_prob,
+          targeting_fn,
+          is_training,
+          do_prune=True)
+
+    w = tf.identity(w, name="post_dropout")
+    y = tf.matmul(x, w) + b
+
+    if use_bias:
+      y += b
+    
+    if activation:
+      y = activation(y)
+
+    return tf.reshape(y, [x_shape[0], x_shape[1], x_shape[2]])
+
+def td_dense_relu_dense(inputs,
+                     filter_size,
+                     output_size,
+                     output_activation=None,
+                     dropout=0.0,
+                     dropout_broadcast_dims=None,
+                     name=None,
+                     use_td=False,
+                      is_training=True,
+                      keep_prob=1.0,
+                      targeting_rate=0.0,
+                      hparams=None):
+  """Hidden layer with RELU activation followed by linear projection."""
+  layer_name = "%s_{}" % name if name else "{}"
+  h = td_dense(inputs,
+          filter_size,
+          targeting_fn=common_layers.weight_targeting,
+          targeting_rate=targeting_rate,
+          keep_prob=keep_prob,
+          use_bias=False,
+          name=name,
+          do_prune=True,
+          is_training=is_training,
+          hparams=hparams,
+          activation=tf.nn.relu)
+
+  o = td_dense(
+      h,
+      total_depth,
+      targeting_fn=common_layers.weight_targeting,
+      targeting_rate=targeting_rate,
+      keep_prob=keep_prob,
+      use_bias=False,
+      name=name,
+      do_prune=True,
+      is_training=is_training,
+      hparams=hparams,
+      activation=output_activation)
+  return o
 
 def targeted_dropout(inputs,
                      k,

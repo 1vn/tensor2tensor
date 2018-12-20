@@ -79,7 +79,6 @@ class Transformer(t2t_model.T2TModel):
               encoder-decoder attention. [batch_size, input_length]
     """
     inputs = common_layers.flatten4d3d(inputs)
-
     encoder_input, self_attention_bias, encoder_decoder_attention_bias = (
         transformer_prepare_encoder(
             inputs, target_space, hparams, features=features))

@@ -3196,7 +3196,8 @@ def compute_attention_component(antecedent,
                                 use_td=False,
                                 is_training=True,
                                 keep_prob=1.0,
-                                targeting_rate=0.0):
+                                targeting_rate=0.0,
+                                hparams=None):
   """Computes attention compoenent (query, key or value).
 
   Args:
@@ -3223,35 +3224,25 @@ def compute_attention_component(antecedent,
                vars_3d_num_heads,
                total_depth // vars_3d_num_heads],
         initializer=tf.random_normal_initializer(stddev=initializer_stddev))
-    if use_td and keep_prob < 1.0:
-      targeting_fn = common_layers.weight_targeting
-
-      var = common_layers.targeted_dropout(
-          var,
-          targeting_rate * tf.to_float(input_depth * vars_3d_num_heads * depth_per_head),
-          keep_prob,
-          targeting_fn,
-          is_training,
-          do_prune=True)
-
     var = tf.cast(var, antecedent.dtype)
     var = tf.reshape(var, [input_depth, total_depth])
     return tf.tensordot(antecedent, var, axes=1)
   if filter_width == 1:
     if use_td and keep_prob < 1.0:
-      targeting_fn = common_layers.weight_targeting
-
-      antecedent = common_layers.targeted_dropout(
+      return common_layers.td_dense(
           antecedent,
-          targeting_rate * tf.to_float(total_depth),
-          keep_prob,
-          targeting_fn,
-          is_training,
-          do_prune=True)
+          total_depth,
+          targeting_fn=common_layers.weight_targeting,
+          targeting_rate=targeting_rate,
+          keep_prob=keep_prob,
+          use_bias=False,
+          name=name,
+          do_prune=True,
+          is_training=is_training,
+          hparams=hparams)
 
-    linear = common_layers.dense(
+    return common_layers.dense(
         antecedent, total_depth, use_bias=False, name=name)
-    return linear
   else:
     return common_layers.conv1d(
         antecedent, total_depth, filter_width, padding=padding, name=name)
@@ -3269,7 +3260,8 @@ def compute_qkv(query_antecedent,
                 use_td=None,
                 targeting_rate=0.0,
                 keep_prob=1.0,
-                is_training=True):
+                is_training=True,
+                hparams=None):
   """Computes query, key and value.
 
   Args:
@@ -3306,7 +3298,8 @@ def compute_qkv(query_antecedent,
       use_td=use_td,
       targeting_rate=targeting_rate,
       keep_prob=keep_prob,
-      is_training=is_training)
+      is_training=is_training,
+      hparams=hparams)
   v = compute_attention_component(
       memory_antecedent,
       total_value_depth,
@@ -3317,7 +3310,8 @@ def compute_qkv(query_antecedent,
       use_td=use_td,
       targeting_rate=targeting_rate,
       keep_prob=keep_prob,
-      is_training=is_training)
+      is_training=is_training,
+      hparams=hparams)
   return q, k, v
 
 
@@ -3352,6 +3346,7 @@ def multihead_attention(query_antecedent,
                         keep_prob=None,
                         targeting_rate=None,
                         is_training=True,
+                        hparams=None,
                         **kwargs):
   """Multihead scaled-dot-product attention with input/output transformations.
 
@@ -3442,7 +3437,7 @@ def multihead_attention(query_antecedent,
                             kv_filter_width, q_padding, kv_padding,
                             vars_3d_num_heads=vars_3d_num_heads,use_td=use_td,
                             keep_prob=keep_prob,targeting_rate=targeting_rate,
-                            is_training=is_training)
+                            is_training=is_training, hparams=hparams)
 
     if cache is not None:
       if attention_type not in ["dot_product", "dot_product_relative"]:
