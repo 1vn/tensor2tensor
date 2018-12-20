@@ -2309,4 +2309,5 @@ def transformer_targeted_dropout():
   hparams.use_td = "weight"
   hparams.targeting_rate = 0.5
   hparams.keep_prob = 0.5
+  hparams.ffn_layer="td_dense_relu_dense"
   return hparams

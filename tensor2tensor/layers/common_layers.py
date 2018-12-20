@@ -3722,7 +3722,10 @@ def td_dense(x,
     if activation:
       y = activation(y)
 
-    return tf.reshape(y, [x_shape[0], x_shape[1], x_shape[2]])
+    if len(x_shape) == 3:
+      return tf.reshape(y, [x_shape[0], x_shape[1], x_shape[2]])
+    
+    return tf.reshape(y, [x_shape[0], x_shape[1], x_shape[2], x_shape[3]])
 
 def td_dense_relu_dense(inputs,
                      filter_size,
@@ -3740,7 +3743,7 @@ def td_dense_relu_dense(inputs,
   layer_name = "%s_{}" % name if name else "{}"
   h = td_dense(inputs,
           filter_size,
-          targeting_fn=common_layers.weight_targeting,
+          targeting_fn=weight_targeting,
           targeting_rate=targeting_rate,
           keep_prob=keep_prob,
           use_bias=False,
@@ -3752,8 +3755,8 @@ def td_dense_relu_dense(inputs,
 
   o = td_dense(
       h,
-      total_depth,
-      targeting_fn=common_layers.weight_targeting,
+      output_size,
+      targeting_fn=weight_targeting,
       targeting_rate=targeting_rate,
       keep_prob=keep_prob,
       use_bias=False,
