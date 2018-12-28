@@ -1241,7 +1241,6 @@ def dense_relu_dense(inputs,
       activation=output_activation,
       use_bias=True,
       name=layer_name.format("conv2"))
-  print(o, "yolo")
   return o
 
 
@@ -3593,6 +3592,7 @@ def weight_targeting(w, k):
   w = tf.reshape(w, [size, w_shape[-1]])
 
   transpose_w = tf.transpose(w)
+  print("transpose_w:", transpose_w)
   thres = tf.contrib.framework.sort(tf.abs(transpose_w), axis=1)[:, k]
   mask = tf.to_float(thres[None, :] >= tf.abs(w))
 
@@ -3691,14 +3691,18 @@ def td_dense(x,
             do_prune=False,
             use_bias=True,
             hparams=None,
-            activation=None):
+            activation=None,
+            reshape=True):
   with tf.variable_scope(name, default_name="td_dense"):
     x_shape = shape_list(x)
-    x = tf.reshape(x, [-1, x_shape[2]])
+    print(x.name, "orig:", x.shape)
+    x = tf.reshape(x, [-1, x_shape[-1]])
+    print(x.name, "reshape:", x.shape)
     w = tf.get_variable("kernel",
-                        shape=[x.shape[1], units],
+                        shape=[x.shape[-1], units],
                         dtype=tf.float32,
                         initializer=tf.glorot_normal_initializer())
+    print(w.name, "w.shape:", w.shape)
     b = tf.get_variable(
         "bias",
         shape=[units],
@@ -3708,7 +3712,7 @@ def td_dense(x,
     if keep_prob < 1.0:
       w = targeted_dropout(
           w,
-          targeting_rate * tf.to_float(x.shape[1]) - 1,
+          targeting_rate * tf.to_float(x_shape[-1]) - 1,
           keep_prob,
           targeting_fn,
           is_training,
@@ -3723,8 +3727,12 @@ def td_dense(x,
     if activation:
       y = activation(y)
 
+    if not reshape:
+      return y
+
+    print(y.name, "y.shape:", y.shape)
     o = tf.reshape(y, x_shape)
-    print(o, "yolo")
+    print(o.name, "o.shape:", o.shape)
     return o
 
 
@@ -3752,8 +3760,8 @@ def td_dense_relu_dense(inputs,
           do_prune=True,
           is_training=is_training,
           hparams=hparams,
-          activation=tf.nn.relu)
-
+          activation=tf.nn.relu,
+          reshape=False)
   o = td_dense(
       h,
       output_size,

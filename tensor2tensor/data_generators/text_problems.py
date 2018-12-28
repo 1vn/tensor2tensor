@@ -224,6 +224,7 @@ class Text2TextProblem(problem.Problem):
       encoder = text_encoder.ByteTextEncoder()
     elif self.vocab_type == VocabType.SUBWORD:
       if force_get:
+        print(data_dir)
         vocab_filepath = os.path.join(data_dir, self.vocab_filename)
         encoder = text_encoder.SubwordTextEncoder(vocab_filepath)
       else:

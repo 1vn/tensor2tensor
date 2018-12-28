@@ -1269,7 +1269,12 @@ def transformer_decoder(decoder_input,
               dropout_broadcast_dims=attention_dropout_broadcast_dims,
               max_length=hparams.get("max_length"),
               decode_loop_step=decode_loop_step,
-              vars_3d=hparams.get("attention_variables_3d"))
+              vars_3d=hparams.get("attention_variables_3d"),
+              use_td=hparams.use_td,
+              keep_prob=hparams.keep_prob,
+              targeting_rate=hparams.targeting_rate,
+              is_training=hparams.mode == tf.estimator.ModeKeys.TRAIN,
+              hparams=hparams)
           x = common_layers.layer_postprocess(x, y, hparams)
         if encoder_output is not None:
           with tf.variable_scope("encdec_attention"):
@@ -1301,7 +1306,11 @@ def transformer_decoder(decoder_input,
               nonpadding_mask=nonpadding,
               losses=losses,
               cache=layer_cache,
-              decode_loop_step=decode_loop_step)
+              decode_loop_step=decode_loop_step,
+              use_td=hparams.use_td,
+              keep_prob=hparams.keep_prob,
+              is_training=hparams.mode == tf.estimator.ModeKeys.TRAIN,
+              targeting_rate=hparams.targeting_rate)
           x = common_layers.layer_postprocess(x, y, hparams)
     # if normalization is done in layer_preprocess, then it should also be done
     # on the output, since the output can grow very large, being the sum of
@@ -2304,10 +2313,12 @@ def transformer_tpu_1b():
 @registry.register_hparams
 def transformer_targeted_dropout():
   """HParams for training ASR model on LibriSpeech V1."""
-  hparams = transformer_base()
+  hparams = transformer_base_single_gpu()
 
   hparams.use_td = "weight"
   hparams.targeting_rate = 0.5
   hparams.keep_prob = 0.5
   hparams.ffn_layer = "td_dense_relu_dense"
+  #hparams.layer_preprocess_sequence = "none"
+  hparams.layer_postprocess_sequence = "none"
   return hparams

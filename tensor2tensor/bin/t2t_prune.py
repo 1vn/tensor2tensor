@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 r"""Prune T2TModels using some heuristic.
 
 This supports a very common form of pruning known as magnitude-based pruning.
@@ -63,13 +62,14 @@ def main(argv):
   usr_dir.import_usr_dir(FLAGS.t2t_usr_dir)
   t2t_trainer.maybe_log_registry_and_exit()
 
-
   if FLAGS.generate_data:
     t2t_trainer.generate_data()
 
   if argv:
     t2t_trainer.set_hparams_from_args(argv[1:])
   hparams = t2t_trainer.create_hparams()
+  hparams.data_dir = FLAGS.data_dir
+  hparams.model_dir = FLAGS.output_dir
   trainer_lib.add_problem_hparams(hparams, FLAGS.problem)
   pruning_params = create_pruning_params()
   pruning_strategy = create_pruning_strategy(pruning_params.strategy)
