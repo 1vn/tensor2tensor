@@ -37,6 +37,7 @@ from tensor2tensor.utils import registry
 from tensor2tensor.utils import t2t_model
 from tensor2tensor.utils import trainer_lib
 from tensor2tensor.utils import usr_dir
+from tensor2tensor.utils import decoding
 
 import tensorflow as tf
 
@@ -85,9 +86,11 @@ def main(argv):
   features, labels = dataset.make_one_shot_iterator().get_next()
 
   sess = tf.Session()
-
   model_fn = t2t_model.T2TModel.make_estimator_model_fn(
-      FLAGS.model, hparams, use_tpu=FLAGS.use_tpu)
+      FLAGS.model,
+      decode_hparams=decoding.decode_hparams(FLAGS.decode_hparams),
+      hparams=hparams,
+      use_tpu=FLAGS.use_tpu)
   spec = model_fn(
       features,
       labels,

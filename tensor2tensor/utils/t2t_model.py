@@ -1507,7 +1507,7 @@ class T2TModel(base.Layer):
     """Constructs `tf.estimator.EstimatorSpec` for EVAL (evaluation) mode."""
     del losses_dict
     hparams = self.hparams
-
+    print("estimator_spec_eval", hparams)
     if not hasattr(hparams, "problem"):
       raise NotImplementedError(_no_problem_err("estimator_spec_eval"))
 

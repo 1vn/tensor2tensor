@@ -78,6 +78,7 @@ class Transformer(t2t_model.T2TModel):
           encoder_decoder_attention_bias: Bias and mask weights for
               encoder-decoder attention. [batch_size, input_length]
     """
+    print(hparams, "yolo")
     inputs = common_layers.flatten4d3d(inputs)
     encoder_input, self_attention_bias, encoder_decoder_attention_bias = (
         transformer_prepare_encoder(
@@ -177,7 +178,6 @@ class Transformer(t2t_model.T2TModel):
       Final decoder representation. [batch_size, decoder_length, hidden_dim]
     """
     hparams = self._hparams
-
     losses = []
 
     if self.has_input:
@@ -2322,3 +2322,13 @@ def transformer_targeted_dropout():
   #hparams.layer_preprocess_sequence = "none"
   hparams.layer_postprocess_sequence = "none"
   return hparams
+
+# Pruning parameters
+@registry.register_pruning_params
+def transformer_weight():
+  hp = tf.contrib.training.HParams()
+  hp.add_hparam("strategy", "weight")
+  hp.add_hparam("black_list", ["logits", "bias"])
+  hp.add_hparam("white_list", ["td_dense"])
+  hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
+  return hp

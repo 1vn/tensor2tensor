@@ -3193,7 +3193,7 @@ def compute_attention_component(antecedent,
                                 padding="VALID",
                                 name="c",
                                 vars_3d_num_heads=0,
-                                use_td=False,
+                                use_td=None,
                                 is_training=True,
                                 keep_prob=1.0,
                                 targeting_rate=0.0,
@@ -3228,7 +3228,7 @@ def compute_attention_component(antecedent,
     var = tf.reshape(var, [input_depth, total_depth])
     return tf.tensordot(antecedent, var, axes=1)
   if filter_width == 1:
-    if use_td and keep_prob < 1.0:
+    if use_td:
       return common_layers.td_dense(
           antecedent,
           total_depth,
@@ -3454,7 +3454,9 @@ def multihead_attention(query_antecedent,
         # Encoder-Decoder Attention Cache
         q = compute_attention_component(query_antecedent, total_key_depth,
                                         q_filter_width, q_padding, "q",
-                                        vars_3d_num_heads=vars_3d_num_heads)
+                                        vars_3d_num_heads=vars_3d_num_heads,use_td=use_td,
+                                        keep_prob=keep_prob,targeting_rate=targeting_rate,
+                                        is_training=is_training, hparams=hparams)
         k = cache["k_encdec"]
         v = cache["v_encdec"]
       else:
