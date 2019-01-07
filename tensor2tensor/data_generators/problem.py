@@ -502,7 +502,6 @@ class Problem(object):
     if self._encoders is None:
       data_dir = (model_hparams and hasattr(model_hparams, "data_dir") and
                   model_hparams.data_dir) or None
-      print(data_dir,"yolo")
       self.get_feature_encoders(data_dir)
 
     hp = _default_hparams()

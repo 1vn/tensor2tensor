@@ -3695,14 +3695,11 @@ def td_dense(x,
             reshape=True):
   with tf.variable_scope(name, default_name="td_dense"):
     x_shape = shape_list(x)
-    print(x.name, "orig:", x.shape)
     x = tf.reshape(x, [-1, x_shape[-1]])
-    print(x.name, "reshape:", x.shape)
     w = tf.get_variable("kernel",
                         shape=[x.shape[-1], units],
                         dtype=tf.float32,
                         initializer=tf.glorot_normal_initializer())
-    print(w.name, "w.shape:", w.shape)
     b = tf.get_variable(
         "bias",
         shape=[units],
@@ -3730,9 +3727,7 @@ def td_dense(x,
     if not reshape:
       return y
 
-    print(y.name, "y.shape:", y.shape)
     o = tf.reshape(y, x_shape)
-    print(o.name, "o.shape:", o.shape)
     return o
 
 
