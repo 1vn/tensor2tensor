@@ -3691,8 +3691,7 @@ def td_dense(x,
             do_prune=False,
             use_bias=True,
             hparams=None,
-            activation=None,
-            reshape=True):
+            activation=None):
   with tf.variable_scope(name, default_name="td_dense"):
     x_shape = shape_list(x)
     x = tf.reshape(x, [-1, x_shape[-1]])
@@ -3724,10 +3723,7 @@ def td_dense(x,
     if activation:
       y = activation(y)
 
-    if not reshape:
-      return y
-
-    o = tf.reshape(y, x_shape)
+    o = tf.reshape(y, x_shape[:-1] + [units])
     return o
 
 
@@ -3755,8 +3751,7 @@ def td_dense_relu_dense(inputs,
           do_prune=True,
           is_training=is_training,
           hparams=hparams,
-          activation=tf.nn.relu,
-          reshape=False)
+          activation=tf.nn.relu)
   o = td_dense(
       h,
       output_size,
