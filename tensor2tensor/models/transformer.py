@@ -2311,15 +2311,62 @@ def transformer_tpu_1b():
 
 @registry.register_hparams
 def transformer_targeted_dropout():
-  """HParams for training ASR model on LibriSpeech V1."""
   hparams = transformer_base_single_gpu()
 
   hparams.use_td = "weight"
   hparams.targeting_rate = 0.5
   hparams.keep_prob = 0.5
   hparams.ffn_layer = "td_dense_relu_dense"
-  #hparams.layer_preprocess_sequence = "none"
-  hparams.layer_postprocess_sequence = "none"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_targeted_dropout_botk_75_66():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.75
+  hparams.keep_prob = 0.66
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_targeted_dropout_botk_75_33():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.75
+  hparams.keep_prob = 0.33
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_targeted_dropout_sanity():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.0
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_targeted_dropout_1():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.5
+  hparams.keep_prob = 0.9
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
   return hparams
 
 # Pruning parameters
@@ -2328,6 +2375,15 @@ def transformer_weight():
   hp = tf.contrib.training.HParams()
   hp.add_hparam("strategy", "weight")
   hp.add_hparam("black_list", ["logits", "bias"])
-  hp.add_hparam("white_list", ["td_dense"])
+  hp.add_hparam("white_list", ["v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense/kernel"])
+  hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
+  return hp
+
+@registry.register_pruning_params
+def transformer_default_weight():
+  hp = tf.contrib.training.HParams()
+  hp.add_hparam("strategy", "weight")
+  hp.add_hparam("black_list", ["logits", "bias"])
+  hp.add_hparam("white_list", ["v/kernel", "k/kernel", "ffn/conv1/kernel", "ffn/conv2/kernel"])
   hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
   return hp

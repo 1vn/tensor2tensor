@@ -3435,8 +3435,8 @@ def multihead_attention(query_antecedent,
       q, k, v = compute_qkv(query_antecedent, memory_antecedent,
                             total_key_depth, total_value_depth, q_filter_width,
                             kv_filter_width, q_padding, kv_padding,
-                            vars_3d_num_heads=vars_3d_num_heads,use_td=use_td,
-                            keep_prob=keep_prob,targeting_rate=targeting_rate,
+                            vars_3d_num_heads=vars_3d_num_heads, use_td=use_td,
+                            keep_prob=keep_prob, targeting_rate=targeting_rate,
                             is_training=is_training, hparams=hparams)
 
     if cache is not None:

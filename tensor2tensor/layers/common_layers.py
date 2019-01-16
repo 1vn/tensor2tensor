@@ -3592,7 +3592,6 @@ def weight_targeting(w, k):
   w = tf.reshape(w, [size, w_shape[-1]])
 
   transpose_w = tf.transpose(w)
-  print("transpose_w:", transpose_w)
   thres = tf.contrib.framework.sort(tf.abs(transpose_w), axis=1)[:, k]
   mask = tf.to_float(thres[None, :] >= tf.abs(w))
 
@@ -3803,7 +3802,7 @@ def targeted_dropout(inputs,
   mask = tf.cast(mask, inputs.dtype)
 
   if is_training:
-    return inputs * (1 - mask) + tf.nn.dropout(inputs, keep_prob) * mask
+    return inputs * (1 - mask) + tf.nn.dropout(inputs, keep_prob) * mask * keep_prob
   elif do_prune:
     return inputs * (1 - mask)
   else:
