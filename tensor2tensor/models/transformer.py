@@ -1387,6 +1387,7 @@ def transformer_base_v1():
   hparams.add_hparam("use_td", False)
   hparams.add_hparam("targeting_rate", None)
   hparams.add_hparam("keep_prob", None)
+  hparams.add_hparam("td_type", "")
 
   return hparams
 
@@ -2416,6 +2417,33 @@ def transformer_targeted_dropout_1():
   
   update_hparams_for_tpu(hparams)
   return hparams
+
+@registry.register_hparams
+def transformer_early_dropout_botk_50():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.5
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "early"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_rad_dropout_botk_50_50():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.5
+  hparams.keep_prob = 0.5
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "early"
+  hparams.initializer = "rademacher"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
 
 # Pruning parameters
 @registry.register_pruning_params

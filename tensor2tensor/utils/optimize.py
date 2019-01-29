@@ -26,6 +26,7 @@ from tensor2tensor.utils import multistep_optimizer
 from tensor2tensor.utils import yellowfin
 
 import tensorflow as tf
+import tensorflow_probability as tfp
 
 from tensorflow.python.framework import dtypes
 
@@ -285,6 +286,16 @@ def summarize_variables(var_list=None, tag=None):
         tf.summary.histogram(tag + v_name, v)
 
 
+class RademacherXavier(tf.keras.initializers.Initializer):
+    def __call__(self, shape, dtype=None, partition_info=None):
+        if len(shape) == 2:
+            init = tf.sqrt(2.0 / (shape[0] + shape[1]))
+        elif len(shape) == 4:
+            init = tf.sqrt(2.0 / (shape[0] * shape[1] * (shape[2] + shape[3])))
+
+        return tfp.math.random_rademacher(shape=shape) * init
+
+
 def get_variable_initializer(hparams):
     """Get variable initializer from hparams."""
     if not hparams.initializer:
@@ -311,6 +322,8 @@ def get_variable_initializer(hparams):
         )
     elif hparams.initializer == "xavier":
         return tf.contrib.layers.xavier_initializer()
+    elif hparams.initializer == "rademacher":
+        return RademacherXavier()
     else:
         raise ValueError("Unrecognized initializer: %s" % hparams.initializer)
 

@@ -3705,13 +3705,30 @@ def td_dense(x,
         initializer=tf.zeros_initializer())
 
     if keep_prob < 1.0:
-      w = targeted_dropout(
-          w,
-          targeting_rate * tf.to_float(x_shape[-1]) - 1,
-          keep_prob,
-          targeting_fn,
-          is_training,
-          do_prune=do_prune)
+      if hparams.td_type == "weight":
+        w = targeted_dropout(
+            w,
+            targeting_rate * tf.to_float(x_shape[-1]) - 1,
+            keep_prob,
+            targeting_fn,
+            is_training,
+            do_prune=do_prune)
+      elif hparams.td_type == "ramping_weight":
+        w = ramping_targeted_dropout(
+            w,
+            targeting_rate * tf.to_float(x_shape[-1]) - 1,
+            keep_prob,
+            targeting_fn,
+            is_training,
+            do_prune=do_prune)
+      elif hparams.td_type == "random_weight":
+        w = random_targeted_dropout(
+            w,
+            targeting_rate * tf.to_float(x_shape[-1]) - 1,
+            keep_prob,
+            targeting_fn,
+            is_training,
+            do_prune=do_prune)
 
     w = tf.identity(w, name="post_dropout")
     y = tf.matmul(x, w) + b
@@ -3807,6 +3824,88 @@ def targeted_dropout(inputs,
     return inputs * (1 - mask)
   else:
     return inputs
+
+
+def ramping_targeted_dropout(inputs,
+                     k,
+                     keep_prob,
+                     targeting_fn,
+                     is_training,
+                     do_prune=False):
+  if not is_training and do_prune:
+    k = tf.floor(tf.to_float(k) * tf.to_float(1. - keep_prob))
+
+    drop_rate = (1-keep_prob) * tf.minimum(
+      1.0,
+      tf.to_float(tf.train.get_global_step()) / 40000.)
+
+    targ_perc = 0.95 * k * tf.minimum(
+        1.0,
+        tf.to_float(tf.train.get_global_step()) / 20000.)
+    targ_perc = targ_perc + 0.05 * k * tf.maximum(
+        0.0,
+        tf.minimum(1.0, (tf.to_float(tf.train.get_global_step()) - 20000.) / 20000.))
+
+  mask = targeting_fn(inputs, targ_perc)
+  mask = tf.cast(mask, inputs.dtype)
+
+  if is_training:
+    return inputs * (1 - mask) + tf.nn.dropout(inputs, 1-drop_rate) * mask * (1-drop_rate)
+  elif do_prune:
+    return inputs * (1 - mask)
+  else:
+    return inputs
+
+def early_targeted_dropout(inputs,
+                     k,
+                     keep_prob,
+                     targeting_fn,
+                     is_training,
+                     do_prune=False):
+  if not is_training and do_prune:
+    k = tf.floor(tf.to_float(k) * tf.to_float(1. - keep_prob))
+
+  switch = tf.get_variable(
+      "mask",
+      inputs.shape,
+      initializer=tf.random_uniform_initializer(),
+      trainable=False)
+
+  mask = targeting_fn(inputs, k)
+  mask = tf.cast(mask, inputs.dtype)
+
+  if is_training:
+    mask = tf.logical_and(switch < (1-keep_prob), tf.random_uniform(inputs.shape) < (1-keep_prob))
+    mask = 1. - tf.to_float(mask)
+    mask = tf.stop_gradient(mask)
+    return inputs * mask
+  elif do_prune:
+    mask = switch < k
+    mask = 1. - tf.to_float(mask)
+    mask = tf.stop_gradient(mask)
+    return inputs * mask
+  else:
+    return inputs
+
+def random_targeted_dropout(inputs,
+                     k,
+                     keep_prob,
+                     targeting_fn,
+                     is_training,
+                     do_prune=False):
+  if not is_training and do_prune:
+    k = tf.floor(tf.to_float(k) * tf.to_float(1. - keep_prob))
+
+  mask = targeting_fn(inputs, k)
+  mask = tf.cast(mask, inputs.dtype)
+
+  if is_training:
+    return inputs * (1 - mask)
+  elif do_prune:
+    return inputs * (1 - mask)
+  else:
+    return inputs
+
 
 
 def kl_divergence(mu, log_var, mu_p=0.0, log_var_p=0.0):
