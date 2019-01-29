@@ -3713,7 +3713,7 @@ def td_dense(x,
             targeting_fn,
             is_training,
             do_prune=do_prune)
-      elif hparams.td_type == "ramping_weight":
+      elif hparams.td_type == "ramping":
         w = ramping_targeted_dropout(
             w,
             targeting_rate * tf.to_float(x_shape[-1]) - 1,
@@ -3721,7 +3721,15 @@ def td_dense(x,
             targeting_fn,
             is_training,
             do_prune=do_prune)
-      elif hparams.td_type == "random_weight":
+      elif hparams.td_type == "early":
+        w = early_targeted_dropout(
+            w,
+            targeting_rate * tf.to_float(x_shape[-1]) - 1,
+            keep_prob,
+            targeting_fn,
+            is_training,
+            do_prune=do_prune)
+      elif hparams.td_type == "random":
         w = random_targeted_dropout(
             w,
             targeting_rate * tf.to_float(x_shape[-1]) - 1,
