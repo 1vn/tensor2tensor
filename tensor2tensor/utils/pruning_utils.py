@@ -27,8 +27,10 @@ import tensorflow as tf
 def weight(w, sparsity):
     """Weight-level magnitude pruning."""
     w_shape = common_layers.shape_list(w)
+    # print(w.name, w_shape, "yolo")
     k = int(np.prod(w_shape[:-1]))
     count = tf.to_int32(k * sparsity)
+    # count = tf.Print(count, [count])
     mask = common_layers.weight_targeting(w, count)
     return (1 - mask) * w
 

@@ -3287,7 +3287,12 @@ def compute_qkv(query_antecedent,
       q_filter_width,
       q_padding,
       "q",
-      vars_3d_num_heads=vars_3d_num_heads)
+      vars_3d_num_heads=vars_3d_num_heads,
+      use_td=use_td,
+      targeting_rate=targeting_rate,
+      keep_prob=keep_prob,
+      is_training=is_training,
+      hparams=hparams)
   k = compute_attention_component(
       memory_antecedent,
       total_key_depth,
@@ -3454,7 +3459,9 @@ def multihead_attention(query_antecedent,
         # Encoder-Decoder Attention Cache
         q = compute_attention_component(query_antecedent, total_key_depth,
                                         q_filter_width, q_padding, "q",
-                                        vars_3d_num_heads=vars_3d_num_heads, hparams=hparams)
+                                        vars_3d_num_heads=vars_3d_num_heads, hparams=hparams,
+                                        use_td=use_td, keep_prob=keep_prob, targeting_rate=targeting_rate,
+                                        is_training=is_training)
         k = cache["k_encdec"]
         v = cache["v_encdec"]
       else:

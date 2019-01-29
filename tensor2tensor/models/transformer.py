@@ -2322,6 +2322,18 @@ def transformer_targeted_dropout():
   return hparams
 
 @registry.register_hparams
+def transformer_targeted_dropout_botk_50_50():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.5
+  hparams.keep_prob = 0.5
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
 def transformer_targeted_dropout_botk_75_66():
   hparams = transformer_base_single_gpu()
 
@@ -2340,6 +2352,42 @@ def transformer_targeted_dropout_botk_75_33():
   hparams.use_td = "weight"
   hparams.targeting_rate = 0.75
   hparams.keep_prob = 0.33
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_targeted_dropout_botk_90_22():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.90
+  hparams.keep_prob = 0.22
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_targeted_dropout_botk_90_44():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.90
+  hparams.keep_prob = 0.44
+  hparams.ffn_layer = "td_dense_relu_dense"
+  
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_targeted_dropout_botk_90_66():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.90
+  hparams.keep_prob = 0.66
   hparams.ffn_layer = "td_dense_relu_dense"
   
   update_hparams_for_tpu(hparams)
@@ -2375,7 +2423,7 @@ def transformer_weight():
   hp = tf.contrib.training.HParams()
   hp.add_hparam("strategy", "weight")
   hp.add_hparam("black_list", ["logits", "bias"])
-  hp.add_hparam("white_list", ["v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense/kernel"])
+  hp.add_hparam("white_list", ["q/kernel" ,"v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
   hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
   return hp
 
@@ -2384,6 +2432,6 @@ def transformer_default_weight():
   hp = tf.contrib.training.HParams()
   hp.add_hparam("strategy", "weight")
   hp.add_hparam("black_list", ["logits", "bias"])
-  hp.add_hparam("white_list", ["v/kernel", "k/kernel", "ffn/conv1/kernel", "ffn/conv2/kernel"])
+  hp.add_hparam("white_list", ["q/kernel", "v/kernel", "k/kernel", "ffn/conv1/kernel", "ffn/conv2/kernel"])
   hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
   return hp
