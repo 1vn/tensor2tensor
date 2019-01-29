@@ -3864,7 +3864,7 @@ def ramping_targeted_dropout(inputs,
   else:
     return inputs
 
-def early_targeted_dropout(inputs,
+def random_targeted_dropout(inputs,
                      k,
                      keep_prob,
                      targeting_fn,
@@ -3895,7 +3895,7 @@ def early_targeted_dropout(inputs,
   else:
     return inputs
 
-def random_targeted_dropout(inputs,
+def early_targeted_dropout(inputs,
                      k,
                      keep_prob,
                      targeting_fn,

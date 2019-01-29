@@ -2424,6 +2424,7 @@ def transformer_early_dropout_botk_50():
 
   hparams.use_td = "weight"
   hparams.targeting_rate = 0.5
+  hparams.keep_prob = 0.5
   hparams.ffn_layer = "td_dense_relu_dense"
   hparams.td_type = "early"
   
