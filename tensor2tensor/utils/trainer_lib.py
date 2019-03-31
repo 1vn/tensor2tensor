@@ -149,6 +149,7 @@ def create_hparams(hparams_set,
     hparams = hparams.parse(hparams_overrides_str)
   if problem_name:
     add_problem_hparams(hparams, problem_name)
+  hparams.add_hparam("gs", 1)
   return hparams
 
 
@@ -452,6 +453,7 @@ class T2TExperiment(object):
         self._train_spec.input_fn,
         hooks=self._train_spec.hooks,
         max_steps=max_steps or self._train_spec.max_steps)
+    self._hparams.gs = self._estimator.get_variable_value("global_step")
 
   def train_eval_and_decode(self):
     """Does eval and decode after training every eval_freq_in_steps."""

@@ -61,6 +61,7 @@ def main(argv):
     trainer_lib.set_random_seed(FLAGS.random_seed)
     usr_dir.import_usr_dir(FLAGS.t2t_usr_dir)
     t2t_trainer.maybe_log_registry_and_exit()
+    tf.train.create_global_step()
 
     if FLAGS.generate_data:
         t2t_trainer.generate_data()

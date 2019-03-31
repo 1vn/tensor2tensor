@@ -3713,14 +3713,6 @@ def td_dense(x,
             targeting_fn,
             is_training,
             do_prune=do_prune)
-      elif hparams.td_type == "ramping":
-        w = ramping_targeted_dropout(
-            w,
-            targeting_rate * tf.to_float(x_shape[-1]) - 1,
-            keep_prob,
-            targeting_fn,
-            is_training,
-            do_prune=do_prune)
       elif hparams.td_type == "early":
         w = early_targeted_dropout(
             w,
@@ -3728,6 +3720,8 @@ def td_dense(x,
             keep_prob,
             targeting_fn,
             is_training,
+            hparams.dropout_delay_steps,
+            hparams,
             do_prune=do_prune)
       elif hparams.td_type == "random":
         w = random_targeted_dropout(
@@ -3736,6 +3730,13 @@ def td_dense(x,
             keep_prob,
             targeting_fn,
             is_training,
+            hparams,
+            do_prune=do_prune)
+      elif hparams.td_type == "ramping_early":
+        w = early_ramping_targeted_dropout(
+            w,
+            is_training,
+            hparams,
             do_prune=do_prune)
 
     w = tf.identity(w, name="post_dropout")
@@ -3834,85 +3835,111 @@ def targeted_dropout(inputs,
     return inputs
 
 
-def ramping_targeted_dropout(inputs,
+def random_targeted_dropout(w,
                      k,
                      keep_prob,
                      targeting_fn,
                      is_training,
+                     hparams,
                      do_prune=False):
-  if not is_training and do_prune:
-    k = tf.floor(tf.to_float(k) * tf.to_float(1. - keep_prob))
+  drop_rate = tf.to_float(1.0 - keep_prob)
+  targ_perc = hparams.targeting_rate
 
-    drop_rate = (1-keep_prob) * tf.minimum(
-      1.0,
-      tf.to_float(tf.train.get_global_step()) / 40000.)
-
-    targ_perc = 0.95 * k * tf.minimum(
-        1.0,
-        tf.to_float(tf.train.get_global_step()) / 20000.)
-    targ_perc = targ_perc + 0.05 * k * tf.maximum(
-        0.0,
-        tf.minimum(1.0, (tf.to_float(tf.train.get_global_step()) - 20000.) / 20000.))
-
-  mask = targeting_fn(inputs, targ_perc)
-  mask = tf.cast(mask, inputs.dtype)
-
-  if is_training:
-    return inputs * (1 - mask) + tf.nn.dropout(inputs, 1-drop_rate) * mask * (1-drop_rate)
-  elif do_prune:
-    return inputs * (1 - mask)
-  else:
-    return inputs
-
-def random_targeted_dropout(inputs,
-                     k,
-                     keep_prob,
-                     targeting_fn,
-                     is_training,
-                     do_prune=False):
-  if not is_training and do_prune:
-    k = tf.floor(tf.to_float(k) * tf.to_float(1. - keep_prob))
+  w_shape = w.shape
+  w = tf.reshape(w, [-1, w_shape[-1]])
 
   switch = tf.get_variable(
       "mask",
-      inputs.shape,
+      w.shape,
       initializer=tf.random_uniform_initializer(),
       trainable=False)
 
-  mask = targeting_fn(inputs, k)
-  mask = tf.cast(mask, inputs.dtype)
-
   if is_training:
-    mask = tf.logical_and(switch < (1-keep_prob), tf.random_uniform(inputs.shape) < (1-keep_prob))
-    mask = 1. - tf.to_float(mask)
-    mask = tf.stop_gradient(mask)
-    return inputs * mask
-  elif do_prune:
-    mask = switch < k
-    mask = 1. - tf.to_float(mask)
-    mask = tf.stop_gradient(mask)
-    return inputs * mask
+    mask = tf.logical_and(switch < targ_perc,
+                          tf.random_uniform(w.shape) < drop_rate)
   else:
-    return inputs
+    mask = switch < targ_perc
+
+  mask = 1. - tf.to_float(mask)
+  mask = tf.stop_gradient(mask)
+
+  w = mask * w
+  w = tf.reshape(w, w_shape)
+  return w
 
 def early_targeted_dropout(inputs,
                      k,
                      keep_prob,
                      targeting_fn,
                      is_training,
+                     delay_steps,
+                     hparams,
                      do_prune=False):
-  if not is_training and do_prune:
-    k = tf.floor(tf.to_float(k) * tf.to_float(1. - keep_prob))
 
-  mask = targeting_fn(inputs, k)
-  mask = tf.cast(mask, inputs.dtype)
+  w = inputs
+  gs = tf.train.get_global_step()
+  orig_w = inputs
+  targ_perc = hparams.targeting_rate
+  switch = tf.get_variable(
+      "mask", initializer=inputs.initialized_value(), trainable=False)
+  assign_op = tf.cond(
+      tf.equal(gs, delay_steps), lambda: tf.assign(switch, w),
+      lambda: switch)
+  w_shape = w.shape
+  w = tf.reshape(inputs, [-1, w_shape[-1]])
 
-  if is_training:
-    return inputs * (1 - mask)
-  elif do_prune:
-    return inputs * (1 - mask)
-  else:
-    return inputs
+  with tf.control_dependencies([assign_op]):
+    m = tf.reshape(switch, [-1, w_shape[-1]])
+
+  norm = tf.abs(m)
+  idx = tf.to_int32(targ_perc * tf.to_float(tf.shape(m)[0]))
+  threshold = tf.contrib.framework.sort(norm, axis=0)[idx]
+  mask = norm >= threshold[None, :]
+
+  w = w * tf.to_float(mask)
+  cond = tf.to_float(gs >= delay_steps)
+  return cond * tf.reshape(w, w_shape) + (1 - cond) * orig_w
+
+def early_ramping_targeted_dropout(w,
+                     is_training,
+                     hparams,
+                     do_prune=False):
+  gs = float(hparams.gs)
+  cutoff = float(hparams.dropout_delay_steps // 2)
+  targ_perc = 0.95 * hparams.targeting_rate * min(1.0, gs / cutoff)
+  targ_perc = targ_perc + 0.05 * hparams.targeting_rate * max(
+      0.0, min(1.0, (gs - cutoff) / cutoff))
+
+  switch = tf.get_variable(
+      "mask", initializer=w.initialized_value(), trainable=False)
+  assign_op = tf.cond(
+      tf.less_equal(gs, hparams.dropout_delay_steps),
+      lambda: tf.assign(switch, w), lambda: switch)
+
+  w_shape = w.shape
+  w = tf.reshape(w, [-1, w_shape[-1]])
+
+  prev_mask = tf.get_variable(
+      "previous_mask",
+      initializer=tf.ones_initializer(),
+      shape=w.shape,
+      trainable=False)
+
+  with tf.control_dependencies([assign_op]):
+    m = tf.reshape(switch, [-1, w_shape[-1]])
+    m = prev_mask * m
+
+  norm = tf.abs(m)
+  idx = tf.to_int32(targ_perc * tf.to_float(m.shape[0]))
+  threshold = tf.contrib.framework.sort(norm, axis=0)[idx]
+  mask = norm >= threshold[None, :]
+  mask = tf.logical_and(mask, tf.equal(prev_mask, 1))
+
+  with tf.control_dependencies([tf.assign(prev_mask, tf.to_float(mask))]):
+    w = w * tf.to_float(mask)
+
+  return tf.reshape(w, w_shape)
+
 
 
 

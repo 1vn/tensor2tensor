@@ -2318,7 +2318,7 @@ def transformer_targeted_dropout():
   hparams.targeting_rate = 0.5
   hparams.keep_prob = 0.5
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2330,7 +2330,7 @@ def transformer_targeted_dropout_botk_50_50():
   hparams.targeting_rate = 0.5
   hparams.keep_prob = 0.5
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2342,7 +2342,7 @@ def transformer_targeted_dropout_botk_75_66():
   hparams.targeting_rate = 0.75
   hparams.keep_prob = 0.66
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2354,7 +2354,7 @@ def transformer_targeted_dropout_botk_75_33():
   hparams.targeting_rate = 0.75
   hparams.keep_prob = 0.33
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2366,7 +2366,7 @@ def transformer_targeted_dropout_botk_90_22():
   hparams.targeting_rate = 0.90
   hparams.keep_prob = 0.22
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2378,7 +2378,7 @@ def transformer_targeted_dropout_botk_90_44():
   hparams.targeting_rate = 0.90
   hparams.keep_prob = 0.44
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2390,7 +2390,7 @@ def transformer_targeted_dropout_botk_90_66():
   hparams.targeting_rate = 0.90
   hparams.keep_prob = 0.66
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2402,7 +2402,7 @@ def transformer_targeted_dropout_sanity():
   hparams.targeting_rate = 0.0
   hparams.keep_prob = 0.0
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2414,7 +2414,7 @@ def transformer_targeted_dropout_1():
   hparams.targeting_rate = 0.5
   hparams.keep_prob = 0.9
   hparams.ffn_layer = "td_dense_relu_dense"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
@@ -2424,27 +2424,221 @@ def transformer_early_dropout_botk_50():
 
   hparams.use_td = "weight"
   hparams.targeting_rate = 0.5
-  hparams.keep_prob = 0.5
+  hparams.keep_prob = 0.0
   hparams.ffn_layer = "td_dense_relu_dense"
   hparams.td_type = "early"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
 @registry.register_hparams
-def transformer_random_rad_dropout_botk_50_50():
+def transformer_early_dropout_botk_90():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.9
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "early"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_early_dropout_botk_93():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.93
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "early"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_early_dropout_botk_96():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.96
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "early"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_early_dropout_botk_99():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.99
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "early"
+  hparams.dropout_delay_steps = 1
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_ramping_early_dropout_botk_99_50000():
+  hparams = transformer_early_dropout_botk_99()
+  hparams.td_type = "ramping_early"
+  hparams.dropout_delay_steps = 50000
+  return hparams
+
+@registry.register_hparams
+def transformer_ramping_early_dropout_botk_99_25000():
+  hparams = transformer_early_dropout_botk_99()
+  hparams.td_type = "ramping_early"
+  hparams.dropout_delay_steps = 25000
+  return hparams
+
+@registry.register_hparams
+def transformer_ramping_early_dropout_botk_99_100000():
+  hparams = transformer_early_dropout_botk_99()
+  hparams.td_type = "ramping_early"
+  hparams.dropout_delay_steps = 100000
+  return hparams
+
+
+@registry.register_hparams
+def transformer_random_rad_dropout_botk_50():
   hparams = transformer_base_single_gpu()
 
   hparams.use_td = "weight"
   hparams.targeting_rate = 0.5
-  hparams.keep_prob = 0.5
+  hparams.keep_prob = 0.0
   hparams.ffn_layer = "td_dense_relu_dense"
-  hparams.td_type = "early"
+  hparams.td_type = "random"
   hparams.initializer = "rademacher"
-  
+
   update_hparams_for_tpu(hparams)
   return hparams
 
+@registry.register_hparams
+def transformer_random_rad_dropout_botk_90():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.9
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+  hparams.initializer = "rademacher"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_rad_dropout_botk_93():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.93
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+  hparams.initializer = "rademacher"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_rad_dropout_botk_96():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.96
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+  hparams.initializer = "rademacher"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_rad_dropout_botk_99():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.99
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+  hparams.initializer = "rademacher"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_dropout_botk_50():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.5
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_dropout_botk_90():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.9
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_dropout_botk_93():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.93
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_dropout_botk_96():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.96
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
+
+@registry.register_hparams
+def transformer_random_dropout_botk_99():
+  hparams = transformer_base_single_gpu()
+
+  hparams.use_td = "weight"
+  hparams.targeting_rate = 0.99
+  hparams.keep_prob = 0.0
+  hparams.ffn_layer = "td_dense_relu_dense"
+  hparams.td_type = "random"
+
+  update_hparams_for_tpu(hparams)
+  return hparams
 
 # Pruning parameters
 @registry.register_pruning_params
@@ -2454,6 +2648,16 @@ def transformer_weight():
   hp.add_hparam("black_list", ["logits", "bias"])
   hp.add_hparam("white_list", ["q/kernel" ,"v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
   hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
+  return hp
+
+# Pruning parameters
+@registry.register_pruning_params
+def transformer_early():
+  hp = tf.contrib.training.HParams()
+  hp.add_hparam("strategy", "weight")
+  hp.add_hparam("black_list", ["logits", "bias"])
+  hp.add_hparam("white_list", ["q/kernel" ,"v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
+  hp.add_hparam("sparsities", [0.0])
   return hp
 
 @registry.register_pruning_params
