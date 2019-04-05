@@ -2498,10 +2498,24 @@ def transformer_ramping_early_dropout_botk_99_25000():
   return hparams
 
 @registry.register_hparams
+def transformer_ramping_early_dropout_botk_99_250000():
+  hparams = transformer_early_dropout_botk_99()
+  hparams.td_type = "ramping_early"
+  hparams.dropout_delay_steps = 250000
+  return hparams
+
+@registry.register_hparams
 def transformer_ramping_early_dropout_botk_99_100000():
   hparams = transformer_early_dropout_botk_99()
   hparams.td_type = "ramping_early"
   hparams.dropout_delay_steps = 100000
+  return hparams
+
+@registry.register_hparams
+def transformer_ramping_early_dropout_botk_99_2():
+  hparams = transformer_early_dropout_botk_99()
+  hparams.td_type = "ramping_early"
+  hparams.dropout_delay_steps = 2
   return hparams
 
 
