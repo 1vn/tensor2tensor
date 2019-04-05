@@ -3891,8 +3891,8 @@ def early_targeted_dropout(inputs,
   with tf.control_dependencies([assign_op]):
     m = tf.reshape(switch, [-1, w_shape[-1]])
 
-  mask = targeting_fn(inputs, k)
-  mask = tf.cast(mask, inputs.dtype)
+  mask = targeting_fn(m, k)
+  mask = tf.cast(mask, m.dtype)
 
   w = w * tf.to_float(1.0 - mask)
   cond = tf.to_float(gs >= delay_steps)
