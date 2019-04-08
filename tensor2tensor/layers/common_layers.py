@@ -3879,14 +3879,13 @@ def early_targeted_dropout(inputs,
 
   w = inputs
   gs = tf.train.get_global_step()
-  orig_w = inputs
   switch = tf.get_variable(
       "mask", initializer=inputs.initialized_value(), trainable=False)
   assign_op = tf.cond(
       tf.equal(gs, delay_steps), lambda: tf.assign(switch, w),
       lambda: switch)
   w_shape = w.shape
-  w = tf.reshape(inputs, [-1, w_shape[-1]])
+  w = tf.reshape(w, [-1, w_shape[-1]])
 
   with tf.control_dependencies([assign_op]):
     m = tf.reshape(switch, [-1, w_shape[-1]])
@@ -3895,8 +3894,7 @@ def early_targeted_dropout(inputs,
   mask = tf.cast(mask, m.dtype)
 
   w = w * tf.to_float(1.0 - mask)
-  cond = tf.to_float(gs >= delay_steps)
-  return cond * tf.reshape(w, w_shape) + (1 - cond) * orig_w
+  return w
 
 def early_ramping_targeted_dropout(inputs,
                      k,
