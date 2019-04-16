@@ -38,6 +38,7 @@ from tensor2tensor.utils import t2t_model
 from tensor2tensor.utils import trainer_lib
 from tensor2tensor.utils import usr_dir
 from tensor2tensor.utils import decoding
+from tensor2tensor.utils import bleu_hook
 
 import tensorflow as tf
 
@@ -46,6 +47,7 @@ FLAGS = flags.FLAGS
 
 # See flags.py for additional command-line flags.
 flags.DEFINE_string("pruning_params_set", None, "Which pruning parameters to use.")
+flags.DEFINE_string("pruning_eval_metric", "acc", "Which pruning parameters to use.")
 
 
 def create_pruning_params():
@@ -101,13 +103,19 @@ def main(argv):
     tf.logging.info("Successfully restored checkpoint")
 
     def eval_model():
-        preds = spec.predictions["predictions"]
-        preds = tf.argmax(preds, -1, output_type=labels.dtype)
-        _, acc_update_op = tf.metrics.accuracy(labels=labels, predictions=preds)
-        sess.run(tf.initialize_local_variables())
-        for _ in range(FLAGS.eval_steps):
-            acc = sess.run(acc_update_op)
-        return acc
+        if FLAGS.pruning_eval_metric == "acc":
+            preds = spec.predictions["predictions"]
+            preds = tf.argmax(preds, -1, output_type=labels.dtype)
+            _, acc_update_op = tf.metrics.accuracy(labels=labels, predictions=preds)
+            sess.run(tf.initialize_local_variables())
+            for _ in range(FLAGS.eval_steps):
+                acc = sess.run(acc_update_op)
+            return acc
+        if FLAGS.pruning_eval_metric == "bleu":
+            preds = spec.predictions["predictions"]
+            bleu, _ = bleu_hook.bleu_score(preds, labels)
+            bleu = sess.run(bleu)
+            return 100 * bleu
 
     pruning_utils.sparsify(sess, eval_model, pruning_strategy, pruning_params)
 

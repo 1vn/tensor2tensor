@@ -77,7 +77,7 @@ def sparsify(sess, eval_model, pruning_strategy, pruning_params):
             op = tf.assign(w, pruning_strategy(w, sparsity))
             set_weights_op = tf.group(set_weights_op, op)
         sess.run(set_weights_op)
-        acc = eval_model()
-        tf.logging.info("\tPruning to sparsity = %f: acc = %f" % (sparsity, acc))
+        metric = eval_model()
+        tf.logging.info("\tPruning to sparsity = %f: metric = %s" % (sparsity, metric))
         sess.run(reset_op)
 

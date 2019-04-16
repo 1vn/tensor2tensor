@@ -2512,6 +2512,60 @@ def transformer_ramping_early_dropout_botk_99_100000():
   return hparams
 
 @registry.register_hparams
+def transformer_ramping_random_dropout_botk_99_100000():
+  hparams = transformer_early_dropout_botk_99()
+  hparams.td_type = "ramping_random"
+  hparams.dropout_delay_steps = 100000
+  return hparams
+
+
+@registry.register_hparams
+def transformer_adaptive_early_dropout_botk_99_100000():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "adaptive_early"
+  hparams.dropout_delay_steps = 100000
+  return hparams
+
+@registry.register_hparams
+def transformer_adaptive_early_dropout_botk_99_25000():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "adaptive_early"
+  hparams.dropout_delay_steps = 25000
+  return hparams
+
+@registry.register_hparams
+def transformer_xtreme_dropout_botk_99_100000_keep3():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "xtreme_early"
+  hparams.dropout_delay_steps = 100000
+  hparams.xtreme_keep = 3
+  return hparams
+
+@registry.register_hparams
+def transformer_xtreme_dropout_botk_99_100000_keep4():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "xtreme_early"
+  hparams.dropout_delay_steps = 100000
+  hparams.xtreme_keep = 4
+  return hparams
+
+@registry.register_hparams
+def transformer_xtreme_dropout_botk_99_100000_keep10():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "xtreme_early"
+  hparams.dropout_delay_steps = 100000
+  hparams.xtreme_keep = 10
+  return hparams
+
+@registry.register_hparams
+def transformer_xtreme_dropout_botk_99_100000_keep100():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "xtreme_early"
+  hparams.dropout_delay_steps = 100000
+  hparams.xtreme_keep = 100
+  return hparams
+
+@registry.register_hparams
 def transformer_ramping_early_dropout_botk_99_2():
   hparams = transformer_early_dropout_botk_99()
   hparams.td_type = "ramping_early"
