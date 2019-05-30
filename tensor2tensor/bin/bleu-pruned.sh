@@ -23,7 +23,7 @@ done
 
 for i in $(seq 0 1 9)
 do
-    sparsity="$((10*$i))"
+    sparsity="$((99+$i/10))"
     echo "Sparsity: $sparsity"
     python ~/tensor2tensor/tensor2tensor/bin/t2t-bleu \
     --translation="gs://for-ai/runs/a1vn/$o/prune_$i/translation.en.transformer.$h.translate_ende_wmt32k.beam4.alpha0.6.decodes" \

@@ -80,7 +80,8 @@ def prune_save(sess, pruning_strategy, pruning_params):
     op = tf.assign(w, ow)
     reset_op = tf.group(reset_op, op)
 
-  for sparsity in pruning_params.sparsities:
+  for i in range(len(pruning_params.sparsities)):
+    sparsity = pruning_params.sparsities[i]
     set_weights_op = tf.no_op()
     for w in weights:
       op = tf.assign(w, pruning_strategy(w, sparsity))
@@ -88,7 +89,7 @@ def prune_save(sess, pruning_strategy, pruning_params):
     sess.run(set_weights_op)
     model_path = os.path.expanduser(FLAGS.output_dir or FLAGS.checkpoint_path)
     saver = tf.train.Saver()
-    saver.save(sess, os.path.join(model_path,("prune_"+str(int(10*sparsity))),"ckpt" ))
+    saver.save(sess, os.path.join(model_path,("prune_"+str(i)),"ckpt" ))
     sess.run(reset_op)
 
 def main(argv):

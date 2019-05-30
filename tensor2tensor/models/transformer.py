@@ -2750,7 +2750,7 @@ def transformer_weight():
   hp.add_hparam("strategy", "weight")
   hp.add_hparam("black_list", ["logits", "bias"])
   hp.add_hparam("white_list", ["q/kernel", "v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
-  hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
+  hp.add_hparam("sparsities", [0.99 + 0.001 * i for i in range(10)])
   return hp
 
 # Pruning parameters
