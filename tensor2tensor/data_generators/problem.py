@@ -784,6 +784,7 @@ class Problem(object):
       partition_id: an integer
       num_partitions: an integer
     """
+    #return 0, 1
     if mode != tf.estimator.ModeKeys.TRAIN or not hasattr(config, "tpu_config"):
       # Reset in the case when using TPU but alternating TRAIN and EVAL.
       self._next_partition_id = 0
@@ -880,6 +881,8 @@ class Problem(object):
     if (force_repeat or is_training) and not prevent_repeat:
       # Repeat and skip a random number of records
       dataset = dataset.repeat()
+
+    # dataset = dataset.repeat()
 
     if is_training and self.skip_random_fraction_when_training:
       data_files = tf.contrib.slim.parallel_reader.get_data_files(

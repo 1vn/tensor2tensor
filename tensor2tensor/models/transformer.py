@@ -2527,6 +2527,13 @@ def transformer_adaptive_early_dropout_botk_99_100000():
   return hparams
 
 @registry.register_hparams
+def transformer_adaptive_early_dropout_botk_99_50000():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "adaptive_early"
+  hparams.dropout_delay_steps = 50000
+  return hparams
+
+@registry.register_hparams
 def transformer_adaptive_early_dropout_botk_99_25000():
   hparams = transformer_ramping_early_dropout_botk_99_100000()
   hparams.td_type = "adaptive_early"
@@ -2564,6 +2571,34 @@ def transformer_xtreme_dropout_botk_99_100000_keep100():
   hparams.dropout_delay_steps = 100000
   hparams.xtreme_keep = 100
   return hparams
+
+@registry.register_hparams
+def transformer_xtreme_dropout_botk_99_100000_keep1000():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "xtreme_early"
+  hparams.dropout_delay_steps = 100000
+  hparams.xtreme_keep = 1000
+  return hparams
+
+
+@registry.register_hparams
+def transformer_xtreme_td_botk_99_100000_keep4():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "xtreme_td"
+  hparams.dropout_delay_steps = 100000
+  hparams.keep_prob = 0.01
+  hparams.xtreme_keep = 4
+  return hparams
+
+@registry.register_hparams
+def transformer_xtreme_td_botk_99_100000_keep3():
+  hparams = transformer_ramping_early_dropout_botk_99_100000()
+  hparams.td_type = "xtreme_td"
+  hparams.dropout_delay_steps = 100000
+  hparams.keep_prob = 0.01
+  hparams.xtreme_keep = 3
+  return hparams
+
 
 @registry.register_hparams
 def transformer_ramping_early_dropout_botk_99_2():
@@ -2714,7 +2749,7 @@ def transformer_weight():
   hp = tf.contrib.training.HParams()
   hp.add_hparam("strategy", "weight")
   hp.add_hparam("black_list", ["logits", "bias"])
-  hp.add_hparam("white_list", ["q/kernel" ,"v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
+  hp.add_hparam("white_list", ["q/kernel", "v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
   hp.add_hparam("sparsities", [0.1 * i for i in range(10)])
   return hp
 
@@ -2724,7 +2759,7 @@ def transformer_early():
   hp = tf.contrib.training.HParams()
   hp.add_hparam("strategy", "weight")
   hp.add_hparam("black_list", ["logits", "bias"])
-  hp.add_hparam("white_list", ["q/kernel" ,"v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
+  hp.add_hparam("white_list", ["q/kernel", "v/kernel", "k/kernel", "ffn/td_dense/kernel", "ffn/td_dense_1"])
   hp.add_hparam("sparsities", [0.0])
   return hp
 

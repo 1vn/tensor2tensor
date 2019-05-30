@@ -13,16 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Prune T2TModels using some heuristic.
-
 This supports a very common form of pruning known as magnitude-based pruning.
 It ranks individual weights or units according to their magnitudes and zeros
 out the smallest k% of weights, effectively removing them from the graph.
-
 Example run:
 - train a resnet on cifar10:
     bin/t2t_trainer.py --problem=image_cifar10 --hparams_set=resnet_cifar_32 \
       --model=resnet
-
 - evaluate different pruning percentages using weight-level pruning:
     bin/t2t_prune.py --pruning_params_set=resnet_weight --problem=image_cifar10\
       --hparams_set=resnet_cifar_32 --model=resnet
@@ -41,7 +38,6 @@ from tensor2tensor.utils import decoding
 from tensor2tensor.utils import bleu_hook
 
 import tensorflow as tf
-import numpy as np
 
 flags = tf.flags
 FLAGS = flags.FLAGS
@@ -58,6 +54,42 @@ def create_pruning_params():
 def create_pruning_strategy(name):
     return registry.pruning_strategies(name)
 
+def prune_save(sess, pruning_strategy, pruning_params):
+  """Prune the weights of a model and evaluate."""
+  weights = tf.trainable_variables()
+
+  def should_prune(name):
+    """Whether to prune a weight or not."""
+    in_whitelist = not pruning_params.white_list or any(
+        e in name for e in pruning_params.white_list)
+    in_blacklist = any(e in name for e in pruning_params.black_list)
+
+    if pruning_params.white_list and not in_whitelist:
+      return False
+    elif in_blacklist:
+      return False
+
+    return True
+
+  weights = [w for w in weights if should_prune(w.name)]
+  tf.logging.info("Pruning weights: %s" % weights)
+  unpruned_weights = sess.run(weights)
+
+  reset_op = tf.no_op()
+  for w, ow in zip(weights, unpruned_weights):
+    op = tf.assign(w, ow)
+    reset_op = tf.group(reset_op, op)
+
+  for sparsity in pruning_params.sparsities:
+    set_weights_op = tf.no_op()
+    for w in weights:
+      op = tf.assign(w, pruning_strategy(w, sparsity))
+      set_weights_op = tf.group(set_weights_op, op)
+    sess.run(set_weights_op)
+    model_path = os.path.expanduser(FLAGS.output_dir or FLAGS.checkpoint_path)
+    saver = tf.train.Saver()
+    saver.save(sess, os.path.join(model_path,("prune_"+str(int(10*sparsity))),"ckpt" ))
+    sess.run(reset_op)
 
 def main(argv):
     tf.logging.set_verbosity(tf.logging.INFO)
@@ -102,43 +134,7 @@ def main(argv):
     tf.logging.info("Attempting to restored checkpoint")
     saver.restore(sess, tf.train.latest_checkpoint(checkpoint_path))
     tf.logging.info("Successfully restored checkpoint")
-
-    def eval_model():
-        if FLAGS.pruning_eval_metric == "acc":
-            preds = spec.predictions["predictions"]
-            preds = tf.argmax(preds, -1, output_type=labels.dtype)
-            _, acc_update_op = tf.metrics.accuracy(labels=labels, predictions=preds)
-            sess.run(tf.initialize_local_variables())
-            for _ in range(FLAGS.eval_steps):
-                acc = sess.run(acc_update_op)
-            return acc
-        if FLAGS.pruning_eval_metric == "bleu":
-            preds = spec.predictions["predictions"]
-            bleu, _ = bleu_hook.bleu_score(preds, labels)
-            sess.run(tf.initialize_local_variables())
-            return 100 * sess.run(bleu)
-
-    post_dropouts = []
-    for op in tf.get_default_graph().get_operations():
-        if "post_dropout" in op.name:
-            v = tf.get_default_graph().get_tensor_by_name(op.name + ":0")
-            post_dropouts.append(v)
-
-    post_dropouts = sess.run(post_dropouts)
-    total_nonzero = 0
-    total = 0
-    for uw in post_dropouts:
-        total_nonzero += np.count_nonzero(uw)
-        total += uw.size
-        tf.logging.info(np.count_nonzero(uw))
-        tf.logging.info(uw.size)
-        tf.logging.info(np.count_nonzero(uw) / float(uw.size))
-
-    tf.logging.info("Total Sparsity:")
-    tf.logging.info(total_nonzero/float(total))
-
-    tf.logging.info("Sparsifying...")
-    pruning_utils.sparsify(sess, eval_model, pruning_strategy, pruning_params)
+    prune_save(sess, pruning_strategy, pruning_params)
 
 
 if __name__ == "__main__":

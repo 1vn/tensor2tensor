@@ -63,7 +63,6 @@ def sparsify(sess, eval_model, pruning_strategy, pruning_params):
         return True
 
     weights = [w for w in weights if should_prune(w.name)]
-    tf.logging.info("Pruning weights: %s" % weights)
     unpruned_weights = sess.run(weights)
 
     reset_op = tf.no_op()
