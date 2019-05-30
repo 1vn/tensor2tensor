@@ -4127,7 +4127,7 @@ def early_xtreme_targeted_dropout(inputs,
 
   with tf.control_dependencies([tf.assign(prev_mask, tf.to_float(mask))]):
     if is_training:
-      return inputs * tf.to_float(mask) + tf.nn.dropout(inputs, tf.to_float(1.0-drop_rate)) * tf.to_float(1.0 - mask) * tf.to_float(1.0-drop_rate)
+      return inputs * tf.to_float(mask) + tf.nn.dropout(inputs, tf.to_float(1.0-drop_rate)) * (1.0 - tf.to_float(mask)) * tf.to_float(1.0-drop_rate)
     else:
       return  inputs * tf.to_float(mask)
 
