@@ -135,7 +135,7 @@ def main(argv):
         tf.logging.info(np.count_nonzero(uw) / float(uw.size))
 
     tf.logging.info("Total Sparsity:")
-    tf.logging.info(total_nonzero/float(total))
+    tf.logging.info((total-total_nonzero)/float(total))
 
     tf.logging.info("Sparsifying...")
     pruning_utils.sparsify(sess, eval_model, pruning_strategy, pruning_params)
